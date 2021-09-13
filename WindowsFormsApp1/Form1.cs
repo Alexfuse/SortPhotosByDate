@@ -20,26 +20,25 @@ namespace WindowsFormsApp1
         {
             InitializeComponent();
 
-            button_folder.Click += getFolder;
+            button_folder.Click += GetFolder;
             button_start.Click += StartSorting;
-            //openFileDialog1.Filter = "folder (*.)|*.";
             button_start.Enabled = false;
         }
         
         // получаем выбранную директорию
-        void getFolder (object sende, EventArgs e )
+        void GetFolder (object sende, EventArgs e )
         {
             if (folderBrowserDialog1.ShowDialog() == DialogResult.Cancel)
                 return;
             folderBrowserDialog1.ShowNewFolderButton = false;
             
-            folder_patch.Text = folderBrowserDialog1.SelectedPath;//Path.GetDirectoryName();
+            folder_patch.Text = folderBrowserDialog1.SelectedPath;
             button_start.Enabled = true;
             
         }
 
         //указываем куда складываем файлы
-        private void getDestinationFolder(object sender, EventArgs e)
+        private void GetDestinationFolder(object sender, EventArgs e)
         {
             if (folderBrowserDialog2.ShowDialog() == DialogResult.Cancel)
                 return;
@@ -184,7 +183,7 @@ namespace WindowsFormsApp1
             }
         }
 
-        private void folder_patch_TextChanged(object sender, EventArgs e)
+        private void FolderPatchTextChanged(object sender, EventArgs e)
         {
             if(folder_patch.Text.Trim().Length > 0)
             {

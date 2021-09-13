@@ -48,7 +48,7 @@
             this.folder_patch.Name = "folder_patch";
             this.folder_patch.Size = new System.Drawing.Size(287, 20);
             this.folder_patch.TabIndex = 0;
-            this.folder_patch.TextChanged += new System.EventHandler(this.folder_patch_TextChanged);
+            this.folder_patch.TextChanged += new System.EventHandler(this.FolderPatchTextChanged);
             // 
             // button_folder
             // 
@@ -110,7 +110,7 @@
             this.button1.TabIndex = 9;
             this.button1.Text = "Select Folder";
             this.button1.UseVisualStyleBackColor = true;
-            this.button1.Click += new System.EventHandler(this.getDestinationFolder);
+            this.button1.Click += new System.EventHandler(this.GetDestinationFolder);
             // 
             // folderBrowserDialog1
             // 
