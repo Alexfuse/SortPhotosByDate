@@ -4,6 +4,10 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Security;
+using System.Security.Permissions;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace WindowsFormsApp1
@@ -12,13 +16,17 @@ namespace WindowsFormsApp1
     public partial class Form1 : Form
     {
         static readonly string[] Formats = { "yyyy:MM:dd HH:mm:ss.fff", "yyyy:MM:dd HH:mm:ss" };
+
+        private static volatile int filesMovedCounter = 0;
         public Form1()
         {
             InitializeComponent();
-
+            labelSortedFiles.Text = "0";
             button_folder.Click += GetFolder;
             button_start.Click += StartSorting;
             button_start.Enabled = false;
+            progressBar1.Minimum = 0;
+            progressBar1.Step = 1;
         }
         
         // get input folder
@@ -43,10 +51,11 @@ namespace WindowsFormsApp1
             button_start.Enabled = true;
         }
 
-        void StartSorting(object sende, EventArgs args)
+        async void StartSorting(object sende, EventArgs args)
         {
             progressBar1.Value = 0;
-            int filesMovedCounter = 0;
+            filesMovedCounter = 0;
+            richTextBox1.Clear();
 
             if (!System.IO.Directory.Exists(input_folder_path.Text))
             {
@@ -66,63 +75,89 @@ namespace WindowsFormsApp1
             }
 
                 
-            DirectoryInfo d = new DirectoryInfo(@"" + input_folder_path.Text);
-            IEnumerable<FileInfo> imageFiles = d.GetFilesByExtensions(".jpg", ".png", ".jpeg");
-            if(imageFiles.Count() == 0)
+            DirectoryInfo rootDirectory = new DirectoryInfo(@"" + input_folder_path.Text);
+            if (rootDirectory.GetFilesByExtensions(".jpg", ".png", ".jpeg").Count() == 0 && rootDirectory.GetDirectories().Length == 0)
             {
                 MessageBox.Show("Folder is empty!\nPlease choose another folder.");
                 input_folder_path.ReadOnly = false;
                 return;
             }
-            filesMovedCounter = ProcessFiles(imageFiles, filesMovedCounter);
-            richTextBox1.Text += $"Files sorted & moved: {filesMovedCounter}\n";
+            List<string> allImages = System.IO.Directory
+            .EnumerateFiles(rootDirectory.FullName)
+            .Where(file => file.ToLower().EndsWith("jpg") || file.ToLower().EndsWith("png"))
+            .ToList();
+
+            progressBar1.Maximum = allImages.Count;
+            await Task.Run(() => ProcessFiles(rootDirectory, richTextBox1));
             input_folder_path.ReadOnly = false;
             output_folder_path.ReadOnly = false;
             MessageBox.Show("Done");
         }
 
-        int ProcessFiles(IEnumerable<FileInfo> imageFiles, int filesMovedCounter)
+        async void ProcessFiles(DirectoryInfo directory, RichTextBox richTextBox)
         {
-            progressBar1.Minimum = 0;
-            progressBar1.Maximum = imageFiles.Count();
-            progressBar1.Step = 1;
-            richTextBox1.Text += $"Files loaded: {imageFiles.Count()}\n";
-            foreach (FileInfo file in imageFiles)
+            List<Task> listTasks = new List<Task>();
+            PermissionSet permissions = new PermissionSet(PermissionState.None);
+            permissions.AddPermission(new FileIOPermission(FileIOPermissionAccess.Read, directory.FullName));
+            if (permissions.IsSubsetOf(AppDomain.CurrentDomain.PermissionSet))
             {
-                Tag dateTimeTag = GetDateTimeTagFromFile(file);
-
-                if (dateTimeTag == null)
+                IEnumerable<FileInfo> imageFiles = directory.GetFilesByExtensions(".jpg", ".png", ".jpeg");
+                if (imageFiles.Count() != 0)
                 {
-                    richTextBox1.Text += $"ERROR: The file is missing a date-time field in the metadata {file.Name}\n";
-                    continue;
-                }
-
-                try
-                {
-                    DateTime myDate = DateTime.ParseExact(dateTimeTag.Description, Formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None);
-                    createDirectory(output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month);
-
-                    try
+                    richTextBox.Invoke((MethodInvoker)delegate { richTextBox.AppendText($"Files loaded: {imageFiles.Count()} from {directory.FullName}" + Environment.NewLine);  });
+                    foreach (FileInfo file in imageFiles)
                     {
-                        File.Move(file.FullName, output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month + "\\" + file.Name);
-                        filesMovedCounter++;
-                    }
-                    catch (IOException e)
-                    {
-                        richTextBox1.Text += $"ERROR: {e.Message}\n";
-                        richTextBox1.Text += $"ERROR: Can't move file {file.Name}. File was copied \n";
-                        File.Copy(file.FullName, output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month + "\\" + file.Name);
+                        Tag dateTimeTag = GetDateTimeTagFromFile(file);
+
+                        if (dateTimeTag == null)
+                        {
+                            richTextBox.Invoke((MethodInvoker)delegate { richTextBox.AppendText($"ERROR: The file is missing a date-time field in the metadata {file.Name}" + Environment.NewLine); });
+                            continue;
+                        }
+
+                        try
+                        {
+                            DateTime myDate = DateTime.ParseExact(dateTimeTag.Description, Formats, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None);
+                            createDirectory(output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month);
+
+                            try
+                            {
+                                File.Move(file.FullName, output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month + "\\" + file.Name);
+                            }
+                            catch (IOException e)
+                            {
+                                richTextBox.Invoke((MethodInvoker)delegate {
+                                    richTextBox.AppendText($"ERROR: {e.Message}" + Environment.NewLine);
+                                    richTextBox.AppendText($"ERROR: Can't move file {file.Name}. File was copied" + Environment.NewLine);
+                                });
+                                File.Copy(file.FullName, output_folder_path.Text + "\\" + myDate.Year + "\\" + myDate.Month + "\\" + file.Name);
+                            }
+                            Interlocked.Increment(ref filesMovedCounter);
+                            labelSortedFiles.Invoke((MethodInvoker)delegate { labelSortedFiles.Text = filesMovedCounter.ToString(); });
+                        }
+                        catch (IOException e)
+                        {
+                            richTextBox.Invoke((MethodInvoker)delegate {
+                                richTextBox.AppendText($"ERROR: {e.Message}" + Environment.NewLine);
+                                richTextBox.AppendText($"ERROR: ERROR: {dateTimeTag.Description}" + Environment.NewLine);
+                            });
+                        }
+                        progressBar1.Invoke((MethodInvoker)delegate { progressBar1.PerformStep(); });
                     }
                 }
-                catch (IOException e)
+
+
+                foreach (DirectoryInfo d in directory.GetDirectories())
                 {
-                    richTextBox1.Text += $"ERROR: {e.Message}\n";
-                    richTextBox1.Text += $"ERROR: {dateTimeTag.Description}\n";
-                    richTextBox1.Text += $"ERROR: {dateTimeTag.Description}\n";
+                    Task task = Task.Run(() => ProcessFiles(d, richTextBox));
+                    listTasks.Add(task);
                 }
-                progressBar1.PerformStep();
+            } 
+            else
+            {
+                richTextBox.Invoke((MethodInvoker)delegate { richTextBox.AppendText("ERROR: no access to directory" + Environment.NewLine); });
             }
-            return filesMovedCounter;
+            Task.WhenAll(listTasks);
         }
 
         private void FolderPatchTextChanged(object sender, EventArgs e)

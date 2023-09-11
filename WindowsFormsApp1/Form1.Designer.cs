@@ -40,6 +40,8 @@
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
             this.label3 = new System.Windows.Forms.Label();
             this.folderBrowserDialog2 = new System.Windows.Forms.FolderBrowserDialog();
+            this.label4 = new System.Windows.Forms.Label();
+            this.labelSortedFiles = new System.Windows.Forms.Label();
             this.SuspendLayout();
             // 
             // input_folder_path
@@ -71,7 +73,7 @@
             // 
             // richTextBox1
             // 
-            this.richTextBox1.Location = new System.Drawing.Point(12, 116);
+            this.richTextBox1.Location = new System.Drawing.Point(12, 117);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ScrollBars = System.Windows.Forms.RichTextBoxScrollBars.Vertical;
             this.richTextBox1.Size = new System.Drawing.Size(418, 161);
@@ -128,7 +130,7 @@
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(12, 100);
+            this.label3.Location = new System.Drawing.Point(403, 101);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(21, 13);
             this.label3.TabIndex = 11;
@@ -138,11 +140,31 @@
             // 
             this.folderBrowserDialog2.RootFolder = System.Environment.SpecialFolder.MyComputer;
             // 
+            // label4
+            // 
+            this.label4.AutoSize = true;
+            this.label4.Location = new System.Drawing.Point(12, 100);
+            this.label4.Name = "label4";
+            this.label4.Size = new System.Drawing.Size(63, 13);
+            this.label4.TabIndex = 12;
+            this.label4.Text = "Files sorted:";
+            // 
+            // labelSortedFiles
+            // 
+            this.labelSortedFiles.AutoSize = true;
+            this.labelSortedFiles.Location = new System.Drawing.Point(72, 101);
+            this.labelSortedFiles.Name = "labelSortedFiles";
+            this.labelSortedFiles.Size = new System.Drawing.Size(13, 13);
+            this.labelSortedFiles.TabIndex = 13;
+            this.labelSortedFiles.Text = "0";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(436, 286);
+            this.ClientSize = new System.Drawing.Size(436, 283);
+            this.Controls.Add(this.labelSortedFiles);
+            this.Controls.Add(this.label4);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.button1);
@@ -174,6 +196,8 @@
         private System.Windows.Forms.ProgressBar progressBar1;
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.FolderBrowserDialog folderBrowserDialog2;
+        private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.Label labelSortedFiles;
     }
 }
 
